@@ -1,0 +1,90 @@
+# ========================================
+# DOCKER COMPOSE - LeadsFlow API
+# ========================================
+# Configuração para executar a aplicação com Docker Compose
+# ========================================
+
+version: '3.8'
+
+services:
+  # ========================================
+  # LeadsFlow Application
+  # ========================================
+  leadsflow:
+    container_name: leadsflow-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Supabase
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      
+      # Stripe
+      - VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY}
+      
+      # Evolution API (WhatsApp)
+      - VITE_EVOLUTION_API_URL=${VITE_EVOLUTION_API_URL}
+      - VITE_EVOLUTION_API_KEY=${VITE_EVOLUTION_API_KEY}
+      
+      # Meta Pixel
+      - VITE_META_PIXEL_ID=${VITE_META_PIXEL_ID}
+      
+      # Application
+      - VITE_APP_ENV=production
+      - VITE_APP_URL=${VITE_APP_URL:-https://leadsflow.seudominio.com}
+    volumes:
+      # Logs persistentes
+      - ./logs:/var/log/nginx
+      
+      # SSL certificates (se usar Let's Encrypt local)
+      # - ./ssl:/etc/nginx/ssl:ro
+    restart: unless-stopped
+    networks:
+      - leadsflow-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# ========================================
+# Networks
+# ========================================
+networks:
+  leadsflow-network:
+    driver: bridge
+
+# ========================================
+# Volumes (opcional - para persistência)
+# ========================================
+volumes:
+  logs:
+    driver: local
+
+# ========================================
+# Usage Instructions
+# ========================================
+#
+# 1. Criar arquivo .env na raiz do projeto
+#
+# 2. Iniciar aplicação:
+#    docker-compose up -d
+#
+# 3. Ver logs:
+#    docker-compose logs -f
+#
+# 4. Parar aplicação:
+#    docker-compose down
+#
+# 5. Rebuild após mudanças:
+#    docker-compose up -d --build
+#
+# 6. Escalar (múltiplas instâncias):
+#    docker-compose up -d --scale leadsflow=3
+#
+# ========================================

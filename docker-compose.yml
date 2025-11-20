@@ -1,0 +1,106 @@
+services:
+  leadsflow-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leadsflow-app
+    ports:
+      - "5173:5173"
+    env_file:
+      - .env
+    environment:
+      # Supabase (obrigatório)
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL:?Defina VITE_SUPABASE_URL no .env}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY:?Defina VITE_SUPABASE_ANON_KEY no .env}
+      
+      # Stripe (opcional)
+      - VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY:-}
+      
+      # Evolution API (opcional)
+      - VITE_EVOLUTION_API_URL=${VITE_EVOLUTION_API_URL:-}
+      - VITE_EVOLUTION_API_KEY=${VITE_EVOLUTION_API_KEY:-}
+      
+      # Meta Pixel (opcional)
+      - VITE_META_PIXEL_ID=${VITE_META_PIXEL_ID:-}
+      
+      # Config da aplicação
+      - VITE_APP_ENV=${VITE_APP_ENV:-development}
+      - VITE_APP_URL=${VITE_APP_URL:-http://localhost:5173}
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+    command: >
+      sh -c "
+        if [ ! -d '/app/node_modules' ] || [ -z \"$(ls -A /app/node_modules)\" ]; then
+          echo '📦 Instalando dependências...' &&
+          npm cache clean --force &&
+          npm install --legacy-peer-deps
+        else
+          echo '✅ Dependências já instaladas'
+        fi &&
+        echo '🚀 Iniciando servidor de desenvolvimento...' &&
+        npm run dev -- --host 0.0.0.0 --port 5173
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5173 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - leadsflow-network
+    restart: unless-stopped
+
+  leadsflow-preview:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leadsflow-preview
+    ports:
+      - "4173:4173"
+    env_file:
+      - .env
+    environment:
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL:?Defina VITE_SUPABASE_URL no .env}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY:?Defina VITE_SUPABASE_ANON_KEY no .env}
+      - VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY:-}
+      - VITE_EVOLUTION_API_URL=${VITE_EVOLUTION_API_URL:-}
+      - VITE_EVOLUTION_API_KEY=${VITE_EVOLUTION_API_KEY:-}
+      - VITE_META_PIXEL_ID=${VITE_META_PIXEL_ID:-}
+      - VITE_APP_ENV=${VITE_APP_ENV:-production}
+      - VITE_APP_URL=${VITE_APP_URL:-http://localhost:4173}
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+    command: >
+      sh -c "
+        if [ ! -d '/app/node_modules' ] || [ -z \"$(ls -A /app/node_modules)\" ]; then
+          echo '📦 Instalando dependências...' &&
+          npm cache clean --force &&
+          npm install --legacy-peer-deps
+        else
+          echo '✅ Dependências já instaladas'
+        fi &&
+        echo '🔨 Construindo aplicação...' &&
+        npm run build &&
+        echo '👀 Iniciando preview...' &&
+        npm run preview -- --host 0.0.0.0 --port 4173
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:4173 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - leadsflow-network
+    profiles:
+      - preview
+    restart: unless-stopped
+
+volumes:
+  node_modules:
+
+networks:
+  leadsflow-network:
+    driver: bridge

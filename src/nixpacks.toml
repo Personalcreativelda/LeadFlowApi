@@ -1,0 +1,88 @@
+# ========================================
+# NIXPACKS CONFIGURATION - LeadsFlow API
+# ========================================
+# Configuração para build com Nixpacks (usado pelo Coolify)
+# ========================================
+
+# ========================================
+# Setup Phase
+# ========================================
+[phases.setup]
+# Pacotes necessários
+nixPkgs = ['nodejs-18_x', 'npm-9_x']
+
+# ========================================
+# Install Phase
+# ========================================
+[phases.install]
+# Comandos de instalação
+cmds = [
+    'npm ci --legacy-peer-deps'
+]
+
+# ========================================
+# Build Phase
+# ========================================
+[phases.build]
+# Comandos de build
+cmds = [
+    'npm run build'
+]
+
+# Dependências necessárias no build
+dependsOn = ['install']
+
+# ========================================
+# Start Phase
+# ========================================
+[start]
+# Comando para iniciar a aplicação
+# Opção 1: Usando serve (mais simples)
+cmd = 'npx serve -s dist -l $PORT'
+
+# Opção 2: Usando http-server
+# cmd = 'npx http-server dist -p $PORT'
+
+# Opção 3: Usando nginx (requer Dockerfile)
+# cmd = 'nginx -g "daemon off;"'
+
+# ========================================
+# Environment Variables
+# ========================================
+# As variáveis de ambiente devem ser configuradas
+# no painel do Coolify, não aqui.
+#
+# Variáveis necessárias:
+# - VITE_SUPABASE_URL
+# - VITE_SUPABASE_ANON_KEY
+# - VITE_STRIPE_PUBLIC_KEY
+# - VITE_EVOLUTION_API_URL
+# - VITE_EVOLUTION_API_KEY
+# - VITE_META_PIXEL_ID
+# ========================================
+
+# ========================================
+# Static Build
+# ========================================
+[staticAssets]
+# Se sua aplicação é apenas frontend (SPA)
+# e não precisa de servidor, use esta opção
+# dir = "dist"
+
+# ========================================
+# Observações
+# ========================================
+#
+# 1. Porta padrão: A variável $PORT é fornecida
+#    automaticamente pelo Coolify
+#
+# 2. Build artifacts: O diretório 'dist/' contém
+#    os arquivos buildados
+#
+# 3. Cache: Nixpacks faz cache de node_modules
+#    automaticamente para builds mais rápidos
+#
+# 4. Logs: Os logs de build são visíveis no
+#    painel do Coolify
+#
+# ========================================
